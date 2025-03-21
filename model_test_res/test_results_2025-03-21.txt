@@ -1,0 +1,19 @@
+Top 3 models based on Test Top 1:
+Model: resmodel-12-1.0253.pt, Test Top 1: 71.25%, Test Top 5: 92.70%, Val Top 1: 70.59%, Val Top 5: 92.47%
+Model: resmodel-11-1.0549.pt, Test Top 1: 70.79%, Test Top 5: 92.43%, Val Top 1: 70.06%, Val Top 5: 92.09%
+Model: resmodel-10-4000-1.3314.pt, Test Top 1: 70.35%, Test Top 5: 92.12%, Val Top 1: 70.07%, Val Top 5: 91.70%
+
+Top 3 models based on Test Top 5:
+Model: resmodel-12-1.0253.pt, Test Top 1: 71.25%, Test Top 5: 92.70%, Val Top 1: 70.59%, Val Top 5: 92.47%
+Model: resmodel-11-1.0549.pt, Test Top 1: 70.79%, Test Top 5: 92.43%, Val Top 1: 70.06%, Val Top 5: 92.09%
+Model: resmodel-11-2000-1.3062.pt, Test Top 1: 70.26%, Test Top 5: 92.36%, Val Top 1: 69.86%, Val Top 5: 91.88%
+
+Top 3 models based on Val Top 1:
+Model: resmodel-12-1.0253.pt, Test Top 1: 71.25%, Test Top 5: 92.70%, Val Top 1: 70.59%, Val Top 5: 92.47%
+Model: resmodel-8-2000-1.339.pt, Test Top 1: 70.32%, Test Top 5: 92.10%, Val Top 1: 70.15%, Val Top 5: 91.72%
+Model: resmodel-8-4000-1.3391.pt, Test Top 1: 70.21%, Test Top 5: 91.98%, Val Top 1: 70.12%, Val Top 5: 91.76%
+
+Top 3 models based on Val Top 5:
+Model: resmodel-12-1.0253.pt, Test Top 1: 71.25%, Test Top 5: 92.70%, Val Top 1: 70.59%, Val Top 5: 92.47%
+Model: resmodel-11-1.0549.pt, Test Top 1: 70.79%, Test Top 5: 92.43%, Val Top 1: 70.06%, Val Top 5: 92.09%
+Model: resmodel-11-2000-1.3062.pt, Test Top 1: 70.26%, Test Top 5: 92.36%, Val Top 1: 69.86%, Val Top 5: 91.88%

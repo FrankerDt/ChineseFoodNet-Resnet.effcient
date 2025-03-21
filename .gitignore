@@ -1,0 +1,35 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+
+# 临时文件
+*.log
+*.tmp
+
+# 虚拟环境
+.venv/
+env/
+venv/
+
+# 开发工具
+.idea/
+*.ipynb_checkpoints
+
+# 模型与数据集（重点忽略）
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.xls
+*.xlsx
+
+ChineseFoodNet/
+dataset/
+image/
+images/
+instance/
+model_data/
+model_data_test/
+model_data_cbam_test/
+pic/
+wandb/
