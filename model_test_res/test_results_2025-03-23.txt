@@ -1,0 +1,19 @@
+Top 3 models based on Test Top 1:
+Model: efficient_cbam-80-0.7405.pt, Test Top 1: 77.70%, Test Top 5: 95.48%, Val Top 1: 77.20%, Val Top 5: 95.23%
+Model: efficient_cbam-97-0.7395.pt, Test Top 1: 77.69%, Test Top 5: 95.54%, Val Top 1: 77.28%, Val Top 5: 95.15%
+Model: efficient_cbam-96-0.7385.pt, Test Top 1: 77.67%, Test Top 5: 95.50%, Val Top 1: 77.38%, Val Top 5: 95.12%
+
+Top 3 models based on Test Top 5:
+Model: efficient_cbam-82-0.7411.pt, Test Top 1: 77.47%, Test Top 5: 95.55%, Val Top 1: 77.33%, Val Top 5: 95.13%
+Model: efficient_cbam-97-0.7395.pt, Test Top 1: 77.69%, Test Top 5: 95.54%, Val Top 1: 77.28%, Val Top 5: 95.15%
+Model: efficient_cbam-100-0.7376.pt, Test Top 1: 77.66%, Test Top 5: 95.53%, Val Top 1: 77.31%, Val Top 5: 95.17%
+
+Top 3 models based on Val Top 1:
+Model: efficient_cbam-98-0.737.pt, Test Top 1: 77.63%, Test Top 5: 95.51%, Val Top 1: 77.42%, Val Top 5: 95.09%
+Model: efficient_cbam-96-0.7385.pt, Test Top 1: 77.67%, Test Top 5: 95.50%, Val Top 1: 77.38%, Val Top 5: 95.12%
+Model: efficient_cbam-84-0.7388.pt, Test Top 1: 77.66%, Test Top 5: 95.46%, Val Top 1: 77.35%, Val Top 5: 95.15%
+
+Top 3 models based on Val Top 5:
+Model: efficient_cbam-80-0.7405.pt, Test Top 1: 77.70%, Test Top 5: 95.48%, Val Top 1: 77.20%, Val Top 5: 95.23%
+Model: efficient_cbam-81-0.7392.pt, Test Top 1: 77.48%, Test Top 5: 95.51%, Val Top 1: 77.31%, Val Top 5: 95.19%
+Model: efficient_cbam-85-0.7412.pt, Test Top 1: 77.64%, Test Top 5: 95.50%, Val Top 1: 77.30%, Val Top 5: 95.19%

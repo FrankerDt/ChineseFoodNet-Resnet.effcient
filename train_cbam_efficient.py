@@ -22,7 +22,7 @@ from sam import SAM
 # 是否加载模型
 LOAD_MODEL = 0
 # 模型路径
-model_path = "./model_data/efficient_cbam/efficient_cbam-62-0.7497.pt"
+model_path = "./model_data/efficient_cbam/efficient_cbam-64-0.7448.pt"
 
 IF_WANDB = 1
 

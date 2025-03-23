@@ -4,72 +4,123 @@ from transformers import BertTokenizer
 from torch import nn, optim
 from tqdm import tqdm
 import os
-
+import wandb
+from time import time
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from dual_encoder import DualEncoderModel
 from ChineseFoodPairDataset import ChineseFoodPairDataset
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# 对比损失（Contrastive Loss）实现
+class ContrastiveLoss(nn.Module):
+    def __init__(self, margin=1.0):
+        super(ContrastiveLoss, self).__init__()
+        self.margin = margin
 
-# ✅ 参数设置
-BATCH_SIZE = 32
-EPOCHS = 10
-EMBED_DIM = 256
-LR = 1e-4
-SAVE_PATH = "./dual_model"
-os.makedirs(SAVE_PATH, exist_ok=True)
+    def forward(self, output1, output2, target):
+        # 计算欧几里得距离
+        euclidean_distance = F.pairwise_distance(output1, output2, keepdim=True)
+        loss = torch.mean((1 - target) * torch.pow(euclidean_distance, 2) +
+                          (target) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
+        return loss
 
-# ✅ 加载 BERT tokenizer
-tokenizer = BertTokenizer.from_pretrained("bert-base-chinese")
+# 使用 'if __name__ == "__main__":' 来解决 Windows 上的多线程问题
+if __name__ == '__main__':
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# ✅ 加载图文配对数据集
-train_dataset = ChineseFoodPairDataset(
-    image_root="./ChineseFoodNet/release_data/train/",
-    list_txt_path="./ChineseFoodNet/train_list.txt",
-    class_name_csv="./ChineseFoodNet/class_names.csv",
-    recipe_json_path="./ChineseFoodNet/recipes_chinesefoodnet_207_cleaned.json"
-)
-train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
+    # 参数设置
+    BATCH_SIZE = 32
+    EPOCHS = 10
+    EMBED_DIM = 256
+    LR = 1e-4
+    SAVE_PATH = "./dual_model"
+    os.makedirs(SAVE_PATH, exist_ok=True)
 
-# ✅ 模型初始化（默认加载图像塔预训练 .pt 文件）
-model = DualEncoderModel(embed_dim=EMBED_DIM).to(device)
+    # WandB 配置
+    wandb.init(project="ChineseFood_classification", name="Dual Encoder Training", config={
+        "batch_size": BATCH_SIZE,
+        "epochs": EPOCHS,
+        "learning_rate": LR
+    })
 
-# ✅ 损失函数：简化版 InfoNCE（对角最大化）
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=LR)
+    # 加载 BERT tokenizer
+    tokenizer = BertTokenizer.from_pretrained("bert-base-chinese")
 
-def compute_similarity(image_emb, text_emb):
-    """计算图文之间的余弦相似度矩阵"""
-    return torch.matmul(image_emb, text_emb.T)  # [B, B]
+    # 加载图文配对数据集
+    train_dataset = ChineseFoodPairDataset(
+        image_root="./ChineseFoodNet/release_data/train/",
+        list_txt_path="./ChineseFoodNet/release_data/train_list.txt",
+        class_name_csv="./class_names.csv",
+        recipe_json_path="./recipes_chinesefoodnet_207.json"
+    )
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
-# ✅ 开始训练
-for epoch in range(EPOCHS):
-    model.train()
-    total_loss = 0
+    # 初始化模型，加载你训练好的图像塔权重
+    model = DualEncoderModel(embed_dim=256,
+                             image_weight_path="model_data/efficient_cbam/efficient_cbam-100-0.7376.pt").to(device)
 
-    for images, texts, _ in tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS}"):
-        # 文本 → BERT Tokenizer 编码
-        encoding = tokenizer(texts, return_tensors="pt", padding=True, truncation=True, max_length=128)
-        input_ids = encoding["input_ids"].to(device)
-        attention_mask = encoding["attention_mask"].to(device)
+    # 损失函数：对比损失
+    criterion = ContrastiveLoss()
+    optimizer = optim.Adam(model.parameters(), lr=LR)
 
-        images = images.to(device)
-        image_emb, text_emb = model(images, input_ids, attention_mask)  # [B, D], [B, D]
+    def compute_similarity(image_emb, text_emb):
+        """计算图文之间的余弦相似度矩阵"""
+        return torch.matmul(image_emb, text_emb.T)  # [B, B]
 
-        sim_matrix = compute_similarity(image_emb, text_emb)  # [B, B]
-        targets = torch.arange(sim_matrix.size(0)).to(device)
+    # 训练开始
+    for epoch in range(EPOCHS):
+        model.train()
+        total_loss = 0
+        total_train_correct = 0
+        total_train_samples = 0
+        start_time = time()
 
-        loss = criterion(sim_matrix, targets)
+        # tqdm 显示训练进度
+        for images, texts, _ in tqdm(train_loader, desc=f"Epoch {epoch + 1}/{EPOCHS}", ncols=100):
+            images = images.to(device)
+            encoding = tokenizer(texts, return_tensors="pt", padding=True, truncation=True, max_length=128)
+            input_ids = encoding["input_ids"].to(device)
+            attention_mask = encoding["attention_mask"].to(device)
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+            image_emb, text_emb = model(images, input_ids, attention_mask)  # [B, D], [B, D]
 
-        total_loss += loss.item()
+            # 创建目标（假设这里是正样本）
+            targets = torch.ones(image_emb.size(0)).to(device)
 
-    avg_loss = total_loss / len(train_loader)
-    print(f"📘 Epoch {epoch+1}: Avg Loss = {avg_loss:.4f}")
+            # 计算对比损失
+            loss = criterion(image_emb, text_emb, targets)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-    # ✅ 保存模型
-    save_name = f"{SAVE_PATH}/dual_encoder_epoch{epoch+1}.pt"
-    torch.save(model.state_dict(), save_name)
-    print(f"💾 模型已保存至 {save_name}")
+            total_loss += loss.item()
+
+            # 计算相似度矩阵
+            sim_matrix = compute_similarity(image_emb, text_emb)  # [B, B]
+            # 获取预测准确度
+            correct = torch.argmax(sim_matrix, dim=1) == targets
+            total_train_correct += correct.sum().item()
+            total_train_samples += targets.size(0)
+
+        avg_loss = total_loss / len(train_loader)
+        train_accuracy = total_train_correct / total_train_samples
+        elapsed_time = time() - start_time
+
+        print(
+            f"📘 Epoch {epoch + 1}/{EPOCHS} - Train Loss: {avg_loss:.4f} - Train Accuracy: {train_accuracy * 100:.2f}% - Time: {elapsed_time // 60:.0f}m {elapsed_time % 60:.0f}s")
+
+        # 使用 WandB 记录训练过程
+        wandb.log({
+            "Epoch": epoch + 1,
+            "Train Loss": avg_loss,
+            "Train Accuracy": train_accuracy,
+            "Elapsed Time": elapsed_time
+        })
+
+        # 保存模型
+        save_name = f"{SAVE_PATH}/dual_encoder_epoch{epoch + 1}.pt"
+        torch.save(model.state_dict(), save_name)
+        print(f"💾 Model saved at {save_name}")
+
+    wandb.finish()  # 完成 WandB 记录

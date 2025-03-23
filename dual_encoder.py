@@ -4,30 +4,31 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
 from transformers import BertModel
+from model.efficient_cbam import EfficientCBAMResNet
 
 
 class ImageEncoder(nn.Module):
-    def __init__(self, embed_dim=256, weight_path=None):
+    def __init__(self, embed_dim=256, weight_path="model_data/efficient_cbam/efficient_cbam-72-0.7427.pt", device=None):
         super(ImageEncoder, self).__init__()
-        base_model = models.resnet50(pretrained=(weight_path is None))
-        modules = list(base_model.children())[:-1]  # 去除最后的全连接层
-        self.backbone = nn.Sequential(*modules)
-        self.fc = nn.Linear(2048, embed_dim)
 
+        # 使用自定义的 EfficientCBAMResNet 模型
+        self.backbone = EfficientCBAMResNet(num_classes=embed_dim)  # 使用 embed_dim 输出大小
+
+        # 如果有权重文件，加载模型权重
         if weight_path is not None:
-            state_dict = torch.load(weight_path, map_location='cpu')
-            if 'model' in state_dict:
-                state_dict = state_dict['model']
+            state_dict = torch.load(weight_path, map_location='cpu')  # 先加载到 CPU
             self.backbone.load_state_dict(state_dict, strict=False)
             print(f"✅ 成功加载自定义图像塔权重: {weight_path}")
 
-    def forward(self, images):
-        x = self.backbone(images)
-        x = x.view(x.size(0), -1)
-        x = self.fc(x)
-        x = F.normalize(x, p=2, dim=1)
-        return x
+        # 移动模型到正确的设备
+        self.device = device if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.backbone = self.backbone.to(self.device)  # 确保模型加载到当前设备（GPU 或 CPU）
 
+    def forward(self, images):
+        images = images.to(self.device)  # 确保输入数据在正确的设备上
+        x = self.backbone(images)  # [B, embed_dim]
+        x = F.normalize(x, p=2, dim=1)  # 单位化向量
+        return x
 
 class TextEncoder(nn.Module):
     def __init__(self, embed_dim=256, pretrained_model='bert-base-chinese'):
